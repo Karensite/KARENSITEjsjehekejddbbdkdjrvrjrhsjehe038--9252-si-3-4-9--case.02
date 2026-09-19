@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Private Chat</title>
+    <style>
+        body { margin: 0; font-family: Tahoma, sans-serif; background: #0f172a; color: white; height: 100vh; overflow: hidden; display: flex; justify-content: center; }
+        
+        /* پس‌زمینه متحرک ساده */
+        .bg { position: absolute; width: 100%; height: 100%; z-index: -1; background: radial-gradient(circle, #1e293b 0%, #0f172a 100%); }
+        .star { position: absolute; background: white; border-radius: 50%; opacity: 0.3; animation: move 10s infinite linear; }
+        @keyframes move { from { transform: translateY(0); } to { transform: translateY(-100vh); } }
+
+        .app { width: 100%; max-width: 450px; background: rgba(30, 41, 59, 0.9); height: 100%; display: flex; flex-direction: column; position: relative; z-index: 1; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        
+        .page { display: none; height: 100%; flex-direction: column; }
+        .page.active { display: flex; }
+        
+        /* استایل ورود */
+        .auth { padding: 30px; text-align: center; margin: auto; width: 85%; background: #1e293b; border-radius: 15px; border: 1px solid #334155; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: white; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #6c5ce7; color: white; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; font-weight: bold; }
+        button.green { background: #00b894; }
+        
+        /* استایل چت */
+        .hdr { padding: 15px; background: #1e293b; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
+        .sidebar { padding: 10px; background: #1e293b; border-bottom: 1px solid #334155; max-height: 180px; overflow-y: auto; }
+        .search-bar { display: flex; gap: 5px; margin-bottom: 10px; }
+        .contact { padding: 10px; border-bottom: 1px solid #334155; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+        .contact:hover { background: #334155; }
+        .avatar { width: 35px; height: 35px; background: #6c5ce7; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; }
+        
+        .msgs { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .msg { max-width: 75%; padding: 10px; border-radius: 10px; font-size: 14px; word-wrap: break-word; }
+        .msg.sent { background: #6c5ce7; align-self: flex-end; color: white; border-bottom-right-radius: 2px; }
+        .msg.rcv { background: #334155; align-self: flex-start; border-bottom-left-radius: 2px; }
+        
+        .inp-area { padding: 10px; background: #1e293b; display: flex; gap: 10px; border-top: 1px solid #334155; }
+        .inp-area input { margin: 0; }
+        .send-btn { width: 45px; margin: 0; background: #6c5ce7; border-radius: 50%; }
+    </style>
+</head>
+<body>
+
+    <div class="bg" id="bg"></div>
+
+    <div class="app">
+        <!-- صفحه ورود -->
+        <div id="lp" class="page active">
+            <div class="auth">
+                <h2 style="color:#6c5ce7">ورود به چت</h2>
+                <input type="text" id="lu" placeholder="نام کاربری">
+                <input type="password" id="lpw" placeholder="رمز عبور">
+                <button onclick="login()">ورود</button>
+                <p id="le" style="color:#ff7675;font-size:12px"></p>
+                <hr style="border-color:#334155;margin:20px 0">
+                <h3>ثبت‌نام</h3>
+                <input type="text" id="rn" placeholder="نام نمایشی">
+                <input type="text" id="ru" placeholder="نام کاربری">
+                <input type="password" id="rp" placeholder="رمز عبور">
+                <button class="green" onclick="reg()">ایجاد حساب</button>
+            </div>
+        </div>
+
+        <!-- صفحه چت -->
+        <div id="cp" class="page">
+            <div class="hdr">
+                <span id="ht" style="font-weight:bold">لیست مخاطبین</span>
+                <button onclick="location.reload()" style="width:auto;padding:5px;background:#ff7675;border:none;font-size:12px">خروج</button>
+            </div>
+            
+            <div class="sidebar">
+                <div class="search-bar">
+                    <input type="text" id="si" placeholder="جستجوی نام کاربری...">
+                    <button onclick="findUser()" style="width:50px;margin:0">🔍</button>
+                </div>
+                <div id="cl"></div>
+            </div>
+
+            <div class="msgs" id="mc">
+                <div style="text-align:center;color:#64748b;margin-top:50px">یک مخاطب انتخاب کنید</div>
+            </div>
+
+            <div class="inp-area">
+                <input type="text" id="mi" placeholder="پیام..." onkeypress="if(event.key==='Enter')send()" disabled>
+                <button class="send-btn" onclick="send()" id="sb" disabled>➤</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // ساخت ستاره‌های متحرک
+    for(let i=0; i<30; i++) {
+        let s = document.createElement('div');
+        s.className = 'star';
+        s.style.left = Math.random()*100 + '%';
+        s.style.width = s.style.height = Math.random()*3 + 'px';
+        s.style.animationDuration = Math.random()*5 + 5 + 's';
+        document.getElementById('bg').appendChild(s);
+    }
+
+    const API = 'https://getpantry.cloud/apiv1/pantry/case-chat-demo/basket/data';
+    let me = null, target = null;
+
+    async function get() { try { return (await fetch(API)).json(); } catch(e) { return {users:[], messages:[]}; } }
+    async function put(d) { await fetch(API, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(d) }); }
+
+    async function reg() {
+        let n = document.getElementById('rn').value.trim();
+        let u = document.getElementById('ru').value.trim().toLowerCase();
+        let p = document.getElementById('rp').value;
+        if(!n||!u||!p) return alert('همه فیلدها لازم است');
+        
+        let db = await get();
+        if(db.users.find(x=>x.username==u)) return alert('تکراری است');
+        
+        db.users.push({name:n, username:u, password:p, contacts:[]});
+        await put(db);
+        alert('ثبت‌نام شد!');
+        location.reload();
+    }
+
+    async function login() {
+        let u = document.getElementById('lu').value.trim().toLowerCase();
+        let p = document.getElementById('lpw').value;
+        let db = await get();
+        let f = db.users.find(x=>x.username==u && x.password==p);
+        
+        if(f) {
+            me = f;
+            document.getElementById('lp').classList.remove('active');
+            document.getElementById('cp').classList.add('active');
+            loadContacts();
+            setInterval(loadMsgs, 2000);
+        } else {
+            document.getElementById('le').innerText = 'اشتباه است';
+        }
+    }
+
+    async function findUser() {
+        let q = document.getElementById('si').value.trim().toLowerCase();
+        if(!q) return;
+        let db = await get();
+        let f = db.users.find(u=>u.username==q && u.username!=me.username);
+        
+        if(f) {
+            if(!me.contacts.includes(f.username)) {
+                if(confirm('اضافه شود؟')) {
+                    me.contacts.push(f.username);
+                    let idx = db.users.findIndex(u=>u.username==me.username);
+                    db.users[idx].contacts = me.contacts;
+                    await put(db);
+                }
+            }
+            renderContact(f);
+        } else {
+            alert('پیدا نشد');
+        }
+    }
+
+    function renderContact(u) {
+        let list = document.getElementById('cl');
+        list.innerHTML = '';
+        me.contacts.forEach(c => {
+            list.innerHTML += `<div class="contact" onclick="openChat('${c}')"><div class="avatar">${c[0].toUpperCase()}</div><div>${c}</div></div>`;
+        });
+    }
+    
+    function loadContacts() { renderContact(); }
+
+    function openChat(u) {
+        target = u;
+        document.getElementById('ht').innerText = 'چت با: ' + u;
+        document.getElementById('mi').disabled = false;
+        document.getElementById('sb').disabled = false;
+        loadMsgs();
+    }
+
+    async function loadMsgs() {
+        if(!target) return;
+        let db = await get();
+        let c = document.getElementById('mc');
+        let ms = db.messages.filter(m => (m.s==me.username && m.r==target) || (m.s==target && m.r==me.username));
+        
+        c.innerHTML = '';
+        ms.forEach(m => {
+            let d = document.createElement('div');
+            d.className = 'msg ' + (m.s==me.username ? 'sent' : 'rcv');
+            d.innerText = m.content;
+            c.appendChild(d);
+        });
+        c.scrollTop = c.scrollHeight;
+    }
+
+    async function send() {
+        let i = document.getElementById('mi');
+        if(!i.value.trim() || !target) return;
+        
+        let db = await get();
+        db.messages.push({s:me.username, r:target, content:i.value, time:Date.now()});
+        
+        // پاکسازی خودکار اگر زیاد شد
+        if(db.messages.length > 500) db.messages = db.messages.slice(-400);
+        
+        await put(db);
+        i.value = '';
+        loadMsgs();
+    }
+</script>
+</body>
+  </html>
