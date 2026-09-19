@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Private Chat | Dark & Animated</title>
+    <style>
+        :root { --p: #6c5ce7; --bg: #0f172a; --panel: #1e293b; --text: #e2e8f0; --s: #334155; --r: #475569; --err: #ff7675; }
+        * { box-sizing: border-box; outline: none; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; justify-content: center; height: 100vh; overflow: hidden; position: relative; }
+        
+        /* Animated Background */
+        .bg-anim { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden; background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%); }
+        .circle { position: absolute; border-radius: 50%; background: rgba(108, 92, 231, 0.1); animation: float 20s infinite linear; box-shadow: 0 0 10px rgba(108, 92, 231, 0.2); }
+        @keyframes float { 0% { transform: translateY(110vh) rotate(0deg) scale(0.5); opacity: 0; } 20% { opacity: 0.4; } 80% { opacity: 0.4; } 100% { transform: translateY(-10vh) rotate(360deg) scale(1.2); opacity: 0; } }
+
+        .app { width: 100%; max-width: 480px; background: rgba(30, 41, 59, 0.95); height: 100%; display: flex; flex-direction: column; backdrop-filter: blur(10px); box-shadow: 0 0 40px rgba(0,0,0,0.6); position: relative; z-index: 1; border-left: 1px solid #334155; border-right: 1px solid #334155; }
+        .page { display: none; height: 100%; flex-direction: column; }
+        .page.active { display: flex; animation: fade 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+        @keyframes fade { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .auth { padding: 40px; text-align: center; margin: auto; width: 90%; background: rgba(15, 23, 42, 0.95); border-radius: 25px; border: 1px solid #334155; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .auth h2 { color: var(--p); margin-bottom: 25px; font-size: 28px; text-shadow: 0 0 10px rgba(108, 92, 231, 0.4); }
+        input { width: 100%; padding: 15px; margin: 10px 0; border: 2px solid #334155; border-radius: 12px; box-sizing: border-box; background: #0f172a; color: white; transition: 0.3s; font-size: 14px; }
+        input:focus { border-color: var(--p); box-shadow: 0 0 10px rgba(108, 92, 231, 0.2); }
+        button { width: 100%; padding: 15px; background: var(--p); color: #fff; border: none; border-radius: 12px; cursor: pointer; margin-top: 10px; font-weight: bold; transition: 0.3s; font-size: 16px; letter-spacing: 0.5px; }
+        button:hover { background: #5649c0; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(108, 92, 231, 0.3); }
+        button.sec { background: #00b894; }
+        button.sec:hover { background: #00a180; }
+        
+        .hdr { background: var(--panel); color: #fff; padding: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        .hdr h3 { margin: 0; font-size: 18px; }
+        .btn-out { width: auto; padding: 8px 15px; background: #ff7675; border: none; border-radius: 8px; color: white; cursor: pointer; font-size: 12px; }
+        
+        .msgs { flex: 1; overflow-y: auto; padding: 20px; background: transparent; display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth; }
+        .msg { max-width: 80%; padding: 12px 18px; border-radius: 18px; font-size: 14px; line-height: 1.6; word-wrap: break-word; position: relative; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); user-select: none; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .msg.sent { background: var(--p); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+        .msg.rcv { background: var(--s); align-self: flex-start; border-bottom-left-radius: 4px; color: #e2e8f0; }
+        .msg-meta { font-size: 10px; opacity: 0.7; margin-top: 5px; text-align: left; }
+        
+        .inp-area { padding: 15px; background: var(--panel); display: flex; gap: 10px; align-items: center; border-top: 1px solid #334155; }
+        .inp-area input { margin: 0; padding: 12px 20px; border-radius: 25px; border: 1px solid #475569; background: #0f172a; }
+        .ibtn { width: 45px; height: 45px; border-radius: 50%; border: none; background: var(--p); color: white; cursor: pointer; font-size: 20px; display: flex; justify-content: center; align-items: center; transition: 0.2s; flex-shrink: 0; }
+        .ibtn:hover { background: #5649c0; transform: scale(1.1); }
+        .ibtn:disabled { background: #475569; cursor: not-allowed; }
+        
+        .sidebar { background: var(--panel); border-bottom: 1px solid #334155; padding: 15px; max-height: 220px; overflow-y: auto; }
+        .search-box { display: flex; gap: 8px; margin-bottom: 15px; }
+        .search-box input { margin: 0; flex: 1; }
+        .search-box button { width: auto; margin: 0; padding: 0 15px; border-radius: 10px; }
+        
+        .ct { padding: 12px; border-bottom: 1px solid #334155; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: 0.2s; border-radius: 8px; }
+        .ct:hover { background: rgba(108, 92, 231, 0.1); transform: translateX(-5px); }
+        .ct.active { background: rgba(108, 92, 231, 0.2); border-right: 3px solid var(--p); }
+        .avatar { width: 40px; height: 40px; background: linear-gradient(135deg, var(--p), #a29bfe); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; color: white; font-size: 16px; flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .ct-info { flex: 1; }
+        .ct-name { font-weight: bold; font-size: 14px; }
+        .ct-sub { font-size: 12px; color: #94a3b8; }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div class="bg-anim" id="bg"></div>
+    <div class="app">
+        <div id="lp" class="page active">
+            <div class="auth">
+                <h2>🔒 Private Chat</h2>
+                <input type="text" id="lu" placeholder="نام کاربری">
+                <input type="password" id="lpw" placeholder="رمز عبور">
+                <button onclick="login()">ورود به حساب</button>
+                <p id="le" style="color:var(--err);font-size:12px;min-height:20px"></p>
+                <hr style="border:0;border-top:1px solid #334155;margin:25px 0">
+                <h3 style="color:#cbd5e1">ثبت‌نام رایگان</h3>
+                <input type="text" id="rn" placeholder="نام نمایشی">
+                <input type="text" id="ru" placeholder="نام کاربری (انگلیسی)">
+                <input type="password" id="rp" placeholder="رمز عبور">
+                <button class="sec" onclick="reg()">ایجاد حساب کاربری</button>
+            </div>
+        </div>
+
+        <div id="cp" class="page">
+            <div class="hdr">
+                <h3 id="ht">انتخاب مخاطب...</h3>
+                <button class="btn-out" onclick="location.reload()">خروج</button>
+            </div>
+            
+            <div class="sidebar">
+                <div class="search-box">
+                    <input type="text" id="search-input" placeholder="جستجوی نام کاربری...">
+                    <button onclick="searchUser()">🔍</button>
+                </div>
+                <div id="contacts-list"></div>
+            </div>
+
+            <div class="msgs" id="mc">
+                <div style="text-align:center;color:#64748b;margin-top:50px;opacity:0.7">
+                    <p>برای شروع چت، یک مخاطب را جستجو و انتخاب کنید.</p>
+                </div>
+            </div>
+
+            <div class="inp-area">
+                <input type="text" id="mi" placeholder="پیام خود را بنویسید..." onkeypress="if(event.key==='Enter')sendTxt()" disabled>
+                <button class="ibtn" onclick="sendTxt()" id="send-btn" disabled>➤</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // ================= تنظیمات و متغیرها =================
+    const BASKET_ID = 'case-chat-demo'; 
+    const API_URL = `https://getpantry.cloud/apiv1/pantry/${BASKET_ID}/basket/data`;
+    let CU = null;
+    let CC = null;
+    let RI = null;
+    let isBusy = false;
+
+    // ================= انیمیشن پس‌زمینه =================
+    function initBg() {
+        for(let i=0; i<20; i++) {
+            const c = document.createElement('div');
+            c.className = 'circle';
+            c.style.left = Math.random() * 100 + '%';
+            c.style.width = c.style.height = (Math.random() * 60 + 20) + 'px';
+            c.style.animationDuration = (Math.random() * 15 + 10) + 's';
+            c.style.animationDelay = (Math.random() * 5) + 's';
+            document.getElementById('bg').appendChild(c);
+        }
+    }
+    initBg();
+
+    // ================= توابع دیتابیس =================
+    async function getData() {
+        try { 
+            const r = await fetch(API_URL); 
+            return r.ok ? await r.json() : { users: [], messages: [] }; 
+        } catch (e) { return { users: [], messages: [] }; }
+    }
+
+    async function saveData(data) {
+        try { 
+            await fetch(API_URL, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); 
+            return true; 
+        } catch (e) { return false; }
+    }
+
+    // ================= سیستم پاکسازی خودکار حافظه =================
+    function cleanOldData(db) {
+        if(db.messages.length > 500) {
+            db.messages = db.messages.slice(-400); // نگه داشتن ۴۰۰ پیام آخر
+        }
+        return db;
+    }
+
+    // ================= احراز هویت =================
+    async function reg() {
+        if(isBusy) return; isBusy = true;
+        const n = document.getElementById('rn').value.trim();
+        const u = document.getElementById('ru').value.trim().toLowerCase();
+        const p = document.getElementById('rp').value;
+        const errEl = document.getElementById('le');
+        
+        if(!n || !u || !p) { isBusy = false; return errEl.innerText = 'لطفاً همه فیلدها را پر کنید'; }
+        if(u.length < 3) { isBusy = false; return errEl.innerText = 'نام کاربری باید حداقل ۳ کاراکتر باشد'; }
+        
+        let db = await getData();
+        if(db.users.find(x => x.username === u)) { isBusy = false; return errEl.innerText = 'این نام کاربری قبلاً گرفته شده است'; }
+        
+        db.users.push({ name: n, username: u, password: p, contacts: [] });
+        if(await saveData(db)) {
+            alert('✅ ثبت‌نام با موفقیت انجام شد! حالا وارد شوید.');
+            location.reload();
+        } else { errEl.innerText = '❌ خطا در ارتباط با سرور'; }
+        isBusy = false;
+    }
+
+    async function login() {
+        if(isBusy) return; isBusy = true;
+        const u = document.getElementById('lu').value.trim().toLowerCase();
+        const p = document.getElementById('lpw').value;
+        const errEl = document.getElementById('le');
+        
+        let db = await getData();
+        const f = db.users.find(x => x.username === u && x.password === p);
+        
+        if(f) {
+            CU = f;
+            document.getElementById('lp').classList.remove('active');
+            document.getElementById('cp').classList.add('active');
+            loadContacts();
+        } else { errEl.innerText = '❌ نام کاربری یا رمز عبور اشتباه است'; }
+        isBusy = false;
+    }
+
+    // ================= مدیریت مخاطبین =================
+    async function searchUser() {
+        const q = document.getElementById('search-input').value.trim().toLowerCase();
+        if(!q) return;
+        
+        let db = await getData();
+        const found = db.users.find(u => u.username === q && u.username !== CU.username);
+        const list = document.getElementById('contacts-list');
+        
+        if(found) {
+            if(!CU.contacts.includes(found.username)) {
+                if(confirm(`کاربر "${found.name}" یافت شد. آیا می‌خواهید به لیست مخاطبین اضافه شود؟`)) {
+                    CU.contacts.push(found.username);
+                    const userIndex = db.users.findIndex(u => u.username === CU.username);
+                    db.users[userIndex].contacts = CU.contacts;
+                    await saveData(db);
+                    loadContacts(); // رفرش لیست
+                }
+            } else {
+                alert('این کاربر قبلاً در لیست مخاطبین شما وجود دارد.');
+            }
+        } else {
+            list.innerHTML = '<div style="padding:15px;text-align:center;color:#ff7675">کاربری با این نام پیدا نشد.</div>';
+        }
+    }
+
+    async function loadContacts() {
+        const list = document.getElementById('contacts-list');
+        list.innerHTML = '';
+        if(CU.contacts.length === 0) {
+            list.innerHTML = '<div style="padding:15px;text-align:center;color:#64748b;font-size:13px">هنوز مخاطبی ندارید.<br>از نوار بالا جستجو کنید.</div>';
+        } else {
+            CU.contacts.forEach(u => {
+                list.innerHTML += `
+                    <div class="ct" onclick="openChat('${u}')">
+                        <div class="avatar">${u.charAt(0).toUpperCase()}</div>
+                        <div class="ct-info">
+                            <div class="ct-name">${u}</div>
+                            <div class="ct-sub">آخرین بازدید اخیر</div>
+                        </div>
+                    </div>`;
+            });
+        }
+    }
+
+    // ================= چت خصوصی =================
+    async function openChat(username) {
+        CC = username;
+        document.getElementById('ht').innerText = `چت با: ${username}`;
+        document.getElementById('mi').disabled = false;
+        document.getElementById('send-btn').disabled = false;
+        document.getElementById('mi').focus();
+        
+        document.querySelectorAll('.ct').forEach(el => el.classList.remove('active'));
+        // اینجا می‌توان کلاس اکتیو را به المان کلیک شده داد
+        
+        if(RI) clearInterval(RI);
+        RI = setInterval(loadMsgs, 2500);
+        loadMsgs();
+    }
+
+    async function loadMsgs() {
+        if(!CU || !CC) return;
+        let db = await getData();
+        const c = document.getElementById('mc');
+        
+        const ms = db.messages.filter(m => 
+            (m.sender === CU.username && m.receiver === CC) || 
+            (m.sender === CC && m.receiver === CU.username)
+        ).slice(-50);
+        
+        c.innerHTML = '';
+        if(ms.length === 0) {
+            c.innerHTML = '<div style="text-align:center;color:#64748b;margin-top:20px">هنوز پیامی نیست. سلام کن!</div>';
+        }
+        
+        ms.forEach(m => {
+            const d = document.createElement('div');
+            d.className = `msg ${m.sender === CU.username ? 'sent' : 'rcv'}`;
+            
+            if(m.sender === CU.username) {
+                d.ondblclick = async () => {
+                    if(confirm('آیا مطمئن هستید که می‌خواهید این پیام را حذف کنید؟')) {
+                        db.messages = db.messages.filter(x => x.id !== m.id);
+                        await saveData(db);
+                        loadMsgs();
+                    }
+                };
+            }
+            
+            d.innerHTML = `${m.content}<div class="msg-meta">${m.time}</div>`;
+            c.appendChild(d);
+        });
+        c.scrollTop = c.scrollHeight;
+    }
+
+    async function sendTxt() {
+        if(isBusy || !CC) return; isBusy = true;
+        const i = document.getElementById('mi');
+        if(!i.value.trim()) { isBusy = false; return; }
+        
+        let db = await getData();
+        db.messages.push({
+            id: Date.now(), sender: CU.username, receiver: CC,
+            content: i.value, time: new Date().toLocaleTimeString('fa-IR', {hour:'2-digit', minute:'2-digit'})
+        });
+        
+        db = cleanOldData(db); // پاکسازی خودکار
+        
+        if(await saveData(db)) { 
+            i.value = ''; 
+            loadMsgs(); 
+        } else { 
+            alert('خطا در ارسال پیام'); 
+        }
+        isBusy = false;
+    }
+</script>
+</body>
+                  </html>
