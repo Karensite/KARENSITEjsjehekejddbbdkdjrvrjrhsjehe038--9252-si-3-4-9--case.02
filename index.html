@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>کتاب انسان - نسخه کامل چاپی</title>
+    <!-- کتابخانه تبدیل HTML به عکس -->
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css');
+        @import url('https://fonts.googleapis.com/css2?family=Lalezar&family=Noto+Naskh+Arabic:wght@400;700&display=swap');
+
+        body {
+            background-color: #1a1a1a;
+            color: white;
+            font-family: 'Vazirmatn', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        h1 { margin-bottom: 5px; font-family: 'Lalezar'; font-size: 2rem; }
+        p.desc { color: #aaa; margin-bottom: 20px; font-size: 0.9rem; text-align: center; max-width: 600px; }
+
+        /* دکمه دانلود */
+        .btn-download {
+            background: linear-gradient(45deg, #27ae60, #2ecc71);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            font-family: 'Lalezar', cursive;
+            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.4);
+            transition: all 0.3s ease;
+            margin-bottom: 30px;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .btn-download:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(46, 204, 113, 0.6); }
+        .btn-download:active { transform: scale(0.98); }
+
+        /* ناحیه اصلی قابل چاپ (Grid 12 تایی) */
+        #print-area {
+            background-color: #b0b5b9; /* رنگ طوسی پس‌زمینه */
+            padding: 40px;
+            width: 1600px; /* عرض ثابت برای کیفیت چاپ */
+            height: 900px;
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 20px;
+            box-sizing: border-box;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        /* استایل هر صفحه (کارت) */
+        .page {
+            background-color: #fdfbf7; /* رنگ کاغذ کرم روشن */
+            border-radius: 2px;
+            box-shadow: 
+                2px 2px 8px rgba(0,0,0,0.12),
+                inset 0 0 40px rgba(0,0,0,0.02);
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start; /* متن از بالا شروع شود */
+            align-items: center;
+            text-align: justify;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid #e8e4d9;
+        }
+
+        /* خطوط تزئینی حاشیه صفحه */
+        .page::after {
+            content: "";
+            position: absolute;
+            top: 15px; bottom: 15px; left: 15px; right: 15px;
+            border: 1px solid rgba(138, 90, 68, 0.1);
+            pointer-events: none;
+            border-radius: 1px;
+        }
+
+        /* تایپوگرافی داخلی صفحات */
+        .chapter-tag {
+            font-size: 11px;
+            color: #8a5a44;
+            font-weight: bold;
+            margin-bottom: 10px;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid rgba(138, 90, 68, 0.2);
+            padding-bottom: 4px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h2 {
+            font-family: 'Lalezar', cursive;
+            font-size: 22px;
+            color: #2c241b;
+            margin: 0 0 12px 0;
+            line-height: 1.3;
+            text-align: center;
+            width: 100%;
+        }
+
+        p {
+            font-family: 'Vazirmatn', sans-serif;
+            font-size: 13px; /* سایز مناسب برای جا شدن متن زیاد */
+            line-height: 1.9;
+            color: #3e3226;
+            margin: 0;
+            text-align: justify;
+            text-align-last: center;
+            hyphens: auto;
+        }
+
+        .page-num {
+            position: absolute;
+            bottom: 12px;
+            font-size: 12px;
+            color: #b0a898;
+            font-family: serif;
+        }
+
+        /* استایل خاص صفحه اول (جلد) */
+        .cover-page {
+            background: linear-gradient(135deg, #fffbf0 0%, #f4efe6 100%);
+            border: 2px solid #d4c5b0;
+            justify-content: center;
+        }
+        .cover-page h2 { font-size: 38px; color: #8a5a44; margin-bottom: 15px; line-height: 1.2; }
+        .cover-page p { font-size: 15px; font-style: italic; color: #5c4d42; text-align: center; margin-top: 10px; }
+        .ornament { font-size: 30px; color: #c5a065; margin-bottom: 15px; opacity: 0.8; }
+
+        /* پیام لودینگ */
+        #loading {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .spinner {
+            width: 40px; height: 40px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top-color: #2ecc71;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* اسکرول بار مخفی برای تمیزی */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1a1a1a; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+
+    </style>
+</head>
+<body>
+
+    <h1> کتاب «انسان؛ کتابی زنده»</h1>
+    <p class="desc">
+        نسخه کامل ۲۰۰ خطی آماده چاپ.<br>
+        روی دکمه زیر کلیک کنید تا تصویر نهایی (1600x900px) دانلود شود.
+    </p>
+
+    <button class="btn-download" onclick="downloadBook()">
+        <span>📥</span> دانلود تصویر باکیفیت برای چاپ
+    </button>
+
+    <div id="loading">
+        <div class="spinner"></div>
+        <div style="font-family:'Lalezar'; font-size:1.2rem;">در حال رندر کردن صفحات...</div>
+    </div>
+
+    <!-- ناحیه اصلی ۱۲ صفحه‌ای -->
+    <div id="print-area">
+        
+        <!-- صفحه ۱: جلد -->
+        <div class="page cover-page">
+            <div class="ornament">✦ ✦ </div>
+            <h2>انسان؛<br>کتابی زنده</h2>
+            <p>روایتی ادبی از شباهت عمیق میانِ<br>جوهرِ وجود و سطرهای زندگی</p>
+            <div style="margin-top: 30px; font-size: 24px; color:#8a5a44;">~ ✒️ ~</div>
+        </div>
+
+        <!-- صفحه ۲ -->
+        <div class="page">
+            <div class="chapter-tag">فصل اول: روایت عمر</div>
+            <h2>آغازِ نوشتن</h2>
+            <p>انسان را شاید بتوان پیچیده‌ترین، عجیب‌ترین و در عین حال زیباترین کتابی دانست که در این جهانِ پر از شگفتی وجود دارد. وقتی به چهره‌ی هر کسی نگاه می‌کنیم، در واقع داریم جلد یک کتاب را تماشا می‌کنیم؛ جلدهایی که برخی ساده، بی‌آلایش و خاکستری‌اند و برخی دیگر پر از نقش‌ونگار، رنگارنگ و فریبنده.</p>
+            <p style="margin-top:8px;">اما آیا تا به حال فکر کرده‌ایم که ارزش واقعی هیچ انسانی به جلد و ظاهرش نیست؟ ارزش انسان درست مثل ارزش یک کتاب، به محتوایی است که در لابلای صفحات وجودش پنهان شده، به واژه‌هایی که با سکوت فریاد می‌زند و به داستان‌هایی که هرگز بر زبان نیاورده است. اگر فقط به جلد قضاوت کنیم، شاید بسیاری از گنجینه‌های پنهان را از دست بدهیم.</p>
+            <span class="page-num">۲</span>
+        </div>
+
+        <!-- صفحه ۳ -->
+        <div class="page">
+            <div class="chapter-tag">فصل اول: روایت عمر</div>
+            <h2>کودکی؛ صفحات سفید</h2>
+            <p>کودکیِ هر انسان، فصل اول و شیرین این کتاب است. فصلی که صفحاتش سفید، پاک، نرم و آماده‌ی نوشتن است. در این فصل، واژه‌ها ساده‌اند، جملات کوتاه‌اند و رویاها آن‌قدر بزرگ‌اند که در هیچ قابی نمی‌گنجند.</p>
+            <p style="margin-top:8px;">کودک مثل نویسنده‌ای است که هنوز الفبا را کامل یاد نگرفته، اما با انگشتان کوچکش روی شن‌های ساحل یا بخارِ شیشه‌ی پنجره، زیباترین خطوط را می‌کشد. او نمی‌داند که غلط املایی چیست، نمی‌داند سانسور یعنی چه و نمی‌ترسد که کسی داستانش را مسخره کند. کودکی، تنها فصلی است که در آن «صادق بودن» سخت‌ترین کار دنیا نیست.</p>
+            <span class="page-num">۳</span>
+        </div>
+
+        <!-- صفحه ۴ -->
+        <div class="page">
+            <div class="chapter-tag">فصل اول: روایت عمر</div>
+            <h2>نوجوانی؛ جستجوی هویت</h2>
+            <p>اما کم‌کم ورق‌ها جلو می‌روند و ما وارد فصلی می‌شویم که به آن نوجوانی می‌گوییم؛ فصلی که خطوط نوشته‌هایمان کج‌ومعوج می‌شوند، جوهرِ احساساتمان گاهی پخش می‌شود و دست‌خطمان لرزان است.</p>
+            <p style="margin-top:8px;">نوجوانی مثل کتابی است که نویسنده‌اش هنوز تکلیفش را با خودش نمی‌داند؛ گاهی می‌خواهد رمان بنویسد، گاهی شعر و گاهی هم دلش می‌خواهد کل کتاب را پاره کند و از نو شروع کند. در این فصل، انسان دنبال معنا می‌گردد، دنبال هویت می‌گردد و گاهی آن‌قدر گم می‌شود که فکر می‌کند این کتاب اصلا قرار نیست تمام شود.</p>
+            <span class="page-num">۴</span>
+        </div>
+
+        <!-- صفحه ۵ -->
+        <div class="page">
+            <div class="chapter-tag">فصل اول: روایت عمر</div>
+            <h2>جوانی؛ اوج داستان</h2>
+            <p>سپس نوبت به جوانی می‌رسد؛ اوج داستان، نقطه‌ی عطف روایت و جایی که گره‌های اصلی زندگی باز یا کور می‌شوند. در جوانی، انسان تصمیم می‌گیرد قهرمان زندگی خودش باشد یا راوی غمگین یک تراژدی تکراری.</p>
+            <p style="margin-top:8px;">هر انتخابی که در این سن انجام می‌دهیم، مانند یک پاراگراف سرنوشت‌ساز، مسیر باقی عمر را تغییر می‌دهد. عشق در جوانی مثل یک جوهر نامرئی است که وقتی روی صفحه می‌ریزد، تمام کلمات قبلی را پررنگ‌تر می‌کند. خشم، حسادت، امید، ترس و شجاعت، همه مانند نشانه‌گذاری‌هایی هستند که لحن خواندن کتاب را عوض می‌کنند.</p>
+            <span class="page-num">۵</span>
+        </div>
+
+        <!-- صفحه ۶ -->
+        <div class="page">
+            <div class="chapter-tag">فصل اول: روایت عمر</div>
+            <h2>میانسالی؛ بلوغ و وقار</h2>
+            <p>وقتی پا به میانسالی می‌گذاریم، نوشته‌های وجودمان به بلوغ می‌رسند. دیگر آن خط‌خوردگی‌های هیجانی کمتر می‌شود و کلمات وزن، وقار و عمق پیدا می‌کنند. انسان در میانسالی مانند کتابی است که بارها خوانده شده، بارها نقد شده و حالا می‌تواند با اعتمادبه‌نفس به دیگران درس تجربه بدهد.</p>
+            <p style="margin-top:8px;">چین‌وشکن‌های روی صورتش، درست مانند تاخوردگی گوشه‌ی صفحات قدیمی است که نشان می‌دهد این کتاب، کتاب ارزشمندی بوده و دست‌به‌دست چرخیده است. میانسالی فصلِ «پذیرش» است؛ پذیرش اینکه کتاب من کامل نیست و زیباییِ این کتاب در نقص‌هایش است.</p>
+            <span class="page-num">۶</span>
+        </div>
+
+        <!-- صفحه ۷ -->
+        <div class="page">
+            <div class="chapter-tag">فصل اول: روایت عمر</div>
+            <h2>پیری؛ حکمتِ سکوت</h2>
+            <p>و بعد، پیری فرا می‌رسد؛ فصل پایانی، جمع‌بندی تمام مجلدات و زمانِ مرورِ خاطرات. در این مرحله، صفحات زرد شده‌اند، کاغذها شکننده شده‌اند اما عطرِ خاطرات از آن‌ها به مشام می‌رسد.</p>
+            <p style="margin-top:8px;">انسان پیر مانند یک کتابخانه‌ی متحرک است که هر تار موی سفیدش، بیت شعری از دیوان زندگی اوست. او دیگر نیازی به نوشتن ندارد، چرا که تمام حکمت‌ها در سکوت نگاهش، در لبخند محوش و در دستان لرزانش خلاصه شده است. پیرها کتاب‌هایی هستند که اگر با دقت بخوانیمشان، راهِ صد ساله را در یک نگاه به ما نشان می‌دهند.</p>
+            <span class="page-num">۷</span>
+        </div>
+
+        <!-- صفحه ۸ -->
+        <div class="page">
+            <div class="chapter-tag">فصل دوم: جوهر وجود</div>
+            <h2>تنوع ژانرها</h2>
+            <p>بیایید کمی دقیق‌تر به تفاوتِ آدم‌ها نگاه کنیم. برخی انسان‌ها مانند کتاب‌های قطور، سنگین و دانشنامه‌گونه‌اند؛ پر از فلسفه، تاریخ، استدلال و درس‌های سخت. خواندنشان زمان می‌برد، نیاز به تمرکز دارد اما اگر صبر کنی، گنجینه‌ای از معرفت را در اختیارت می‌گذارند.</p>
+            <p style="margin-top:8px;">برخی دیگر مانند دفترچه‌های یادداشتِ کوچک و جیبی‌اند؛ ساده، صمیمی و پر از احساسات لحظه‌ای. برخی مثل کتاب‌های شعرند؛ مبهم، چندپهلو و نیازمندِ تأویل. و برخی مثل روزنامه‌اند؛ پر از خبرهای روز و هیاهوی لحظه‌ای. مشکل از زمانی شروع می‌شود که بخواهیم همه را با یک معیار بسنجیم.</p>
+            <span class="page-num">۸</span>
+        </div>
+
+        <!-- صفحه ۹ -->
+        <div class="page">
+            <div class="chapter-tag">فصل دوم: جوهر وجود</div>
+            <h2>لکه‌های جوهر و طلا</h2>
+            <p>غم‌ها در زندگی انسان مانند لکه‌های جوهرِ سیاه روی کاغذِ کرم‌رنگ هستند. شاید در نگاه اول ظاهرِ صفحه را تیره کنند، اما بخشی از اصالتِ متن‌اند. کتابی که هیچ لکه‌ی جوهری نداشته باشد، کتابی مصنوعی و چاپخانه‌ای است، نه کتابِ زندگی.</p>
+            <p style="margin-top:8px;">شادی‌ها نیز مانند حاشیه‌نگاری‌های طلایی و گل‌وبوته‌های تزیینی‌اند که خواندنِ کتاب را لذت‌بخش‌تر می‌کنند. اشتباهات ما، غلط‌های املایی زندگی‌اند. بعضی‌ها سعی می‌کنند با غلط‌گیر آن‌ها را بپوشانند و بعضی‌ها کنارِ غلط یادداشت می‌گذارند که «اینجا بود که فهمیدم». اگر این غلط‌ها نبودند، ما هرگز یاد نمی‌گرفتیم که انسان جایز‌الخطاست.</p>
+            <span class="page-num">۹</span>
+        </div>
+
+        <!-- صفحه ۱۰ -->
+        <div class="page">
+            <div class="chapter-tag">فصل دوم: جوهر وجود</div>
+            <h2>نویسنده‌ی سرنوشت</h2>
+            <p>هر انسانی نویسنده‌ی منحصر‌به‌فردِ کتابِ خویش است و این بزرگترین مسئولیت و در عین حال بزرگترین آزادی ماست. هیچ نسخه‌ی دومی از این اثر در جهان وجود ندارد؛ حتی دوقلوها هم دو کتاب متفاوت‌اند با دو فهرستِ مطالبِ جداگانه.</p>
+            <p style="margin-top:8px;">ما نمی‌توانیم فصل‌های گذشته را پاره کنیم، اما قدرتِ شگفت‌انگیزِ ما در «نوشتنِ فصل‌های آینده» است. ما می‌توانیم با جوهرِ امید، با قلمِ اراده و با کاغذِ صبر، زیباترین ادامه را برای کتابمان رقم بزنیم. گاهی کتاب وجودمان بسته می‌شود و کسی جرأت باز کردنش را ندارد؛ اینجا تنهایی معنا پیدا می‌کند.</p>
+            <span class="page-num">۱</span>
+        </div>
+
+        <!-- صفحه ۱۱ -->
+        <div class="page">
+            <div class="chapter-tag">فصل دوم: جوهر وجود</div>
+            <h2>میراثِ جوهر</h2>
+            <p>مرگ، تنها بستنِ جلدِ این کتاب است، نه پایانِ داستان. داستانِ خوب هرگز تمام نمی‌شود؛ فقط از قفسه‌ی زمین به قفسه‌ی آسمان منتقل می‌شود و خوانندگانش تغییر می‌کنند. آنچه پس از ما باقی می‌ماند، ردِ پای جوهری است که بر دلِ دیگران نشسته است، نه تعداد صفحاتی که پر کرده‌ایم.</p>
+            <p style="margin-top:8px;">پس وظیفه‌ی ماست که کتابِ وجودمان را چنان بنویسیم که وقتی بسته شد، خواننده حسرتِ تمام شدنش را بخورد، نه اینکه نفسِ راحتی بکشد. خدا نویسندگیِ این کتاب را به خودِ ما سپرده است، اما ویراستاری‌اش را به عقل، قلب و تجربه‌ی جمعی بشریت داده است.</p>
+            <span class="page-num">۱۱</span>
+        </div>
+
+        <!-- صفحه ۱۲ -->
+        <div class="page">
+            <div class="ornament" style="font-size:24px; color:#8a5a44; margin-bottom:10px;">۞</div>
+            <h2>پایانِ باز</h2>
+            <p>حالا نوبتِ توست؛ قلم را بردار، جوهر را تازه کن و زیباترین، صادقانه‌ترین و ماندگارترین فصلِ باقی‌مانده‌ی عمرت را رقم بزن. یادت باشد، تو هم نویسنده‌ای و هم کتاب؛ هم خلق می‌کنی و هم خوانده می‌شوی.</p>
+            <p style="margin-top:8px; font-weight:bold; color:#8a5a44;">پس مراقبِ واژه‌هایت باش، چون آن‌ها سرنوشتِ تو و سرنوشتِ کسانی هستند که روزی تو را خواهند خواند. 📖✨</p>
+            <span class="page-num">۱۲</span>
+        </div>
+
+    </div>
+
+    <script>
+        function downloadBook() {
+            const element = document.getElementById("print-area");
+            const loading = document.getElementById("loading");
+            
+            loading.style.display = "flex";
+
+            // تنظیمات کیفیت بالا برای چاپ
+            html2canvas(element, {
+                scale: 3, // کیفیت 3 برابر (بسیار بالا)
+                useCORS: true,
+                backgroundColor: "#b0b5b9",
+                logging: false,
+                windowWidth: 1600,
+                windowHeight: 900
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'Human-Book-Full-Text-Print.png';
+                link.href = canvas.toDataURL("image/png", 1.0);
+                link.click();
+                loading.style.display = "none";
+            }).catch(err => {
+                console.error(err);
+                alert("خطا در ساخت تصویر. لطفاً صفحه را رفرش کرده و دوباره تلاش کنید.");
+                loading.style.display = "none";
+            });
+        }
+    </script>
+</body>
+  </html>
